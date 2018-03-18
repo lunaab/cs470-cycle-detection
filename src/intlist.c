@@ -24,7 +24,7 @@ int append(struct intlist* l, int value) {
     l->tail = new;
 
     if (l->head == NULL) {
-        l->head = l->tail
+        l->head = l->tail;
     }
 
     l->length = l->length + 1;
