@@ -9,3 +9,6 @@ testlist.o: intlist_test.c intlist.h
 
 intlist.o: intlist.c intlist.h
 	$(CC) -c $< -o $@
+
+clean:
+	rm *.o test

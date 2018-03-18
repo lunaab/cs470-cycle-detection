@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "intlist.h"
 
-void intlist(struct intlist* l) {
+void initlist(struct intlist* l) {
     l->head = NULL;
     l->tail = NULL;
     l->length = 0;

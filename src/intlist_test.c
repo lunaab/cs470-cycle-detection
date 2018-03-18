@@ -1,10 +1,11 @@
 /* Test file for intlist functions */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include "intlist.h"
 
 void test_init(struct intlist* l) {
-    initlist(l)
+    initlist(l);
     if (l->head == NULL) {
         printf("Test initlist head == NULL: PASS\n");
     } else {
