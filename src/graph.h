@@ -1,8 +1,8 @@
 /* Adjacency list for undirected graph */
 /* Acquired at: https://www.geeksforgeeks.org/graph-and-its-representations/ */
 
-#include <stdio.h>
-#include <stdlib.h>
+#ifndef __GRAPH__
+#define __GRAPH__
  
 // A structure to represent an adjacency list node
 struct AdjListNode
@@ -33,3 +33,5 @@ struct Graph* createGraph(int V);
  
 // Adds an edge to an undirected graph
 void addEdge(struct Graph* graph, int src, int dest);
+
+#endif 

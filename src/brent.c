@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include "intlist.h"
 
-struct node* brentCycleDetection(struct intlist* list) {
+int brentCycleDetection(struct intlist* list) {
     if (list->head == NULL) {
-        return NULL;
+        return 0;
     }
 
     struct node* first_p = list->head;
@@ -28,7 +28,7 @@ struct node* brentCycleDetection(struct intlist* list) {
     }
 
     if (second_p == NULL) {
-        return NULL;
+        return 0;
     }
 
     first_p = second_p = list->head;
@@ -42,5 +42,5 @@ struct node* brentCycleDetection(struct intlist* list) {
         first_p = first_p->next;
     }
 
-    return first_p;
+    return 1;
 }

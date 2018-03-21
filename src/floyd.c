@@ -20,3 +20,4 @@ int floydCycleDetection(struct intlist* list) {
     }
     return 0;
 }
+
