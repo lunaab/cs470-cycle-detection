@@ -1,0 +1,26 @@
+A make file has been provided.
+
+COMPILING THE CODE
+
+In order to create the code for the serial tests type:
+    $make cycle_test
+This will create an executable called "cycle_test" that you can run.
+The output for cycle_test is if the algorithm found the cycle (0=False 1=True)
+and the time it took for the cycle to be detected.
+
+In order to create the code for the parallel tests type:
+    $make dist_cycle_test
+This will create an executable called "dist_cycle_test" that you can run.
+The output for cycle_test is if the algorithm found the cycle (0=False 1=True)
+and the time it took for the cycle to be detected.
+
+CHANGING THE TESTS
+
+In order to change the variables used in the test code:
+    -V: number of vertices
+    -loop_root: node that the final node connects to creating a cycle
+    -num_threads
+you must go into the cycle_test.c or dist_cycle_test.c and uncomment out the
+appropriate code.
+
+Automated tests are coming, but have not yet been implemented.
