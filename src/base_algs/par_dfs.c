@@ -1,12 +1,14 @@
-/* Depth first search cycle detection in undirected graph */
+/* Depth first search cycle detection in undirected graph MPI */
 /* Acquired at: https://www.geeksforgeeks.org/detect-cycle-undirected-graph/ */
 
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "graph.h"
+
 // A recursive function that uses visited[] and parent to detect
 // cycle in subgraph reachable from vertex v.
-int isCyclicUtil(struct graph* g, int v, int* visited, int parent)
+int isCyclicUtil(struct Graph* g, int v, int* visited, int parent)
 {
     // Mark the current node as visited
     visited[v] = 1;
@@ -42,22 +44,39 @@ int isCyclicUtil(struct graph* g, int v, int* visited, int parent)
     }
     return 0;
 }
+
+void* run(void* args)
+{
+    //UNPACK ARGS
+    //TODO
+    // int start = ;
+    // int stop = ;
+    int cycle_found = 0;
+    
+    for (int u = start; u < stop; u++)
+        if (!visited[u]) // Don't recur for u if it is already visited
+          if (isCyclicUtil(g, u, visited, -1))
+             cycle_found = 1;
+             
+    return (void*)cycle_found;
+}
  
 // Returns true if the graph contains a cycle, else false.
-int dfsCycleDetection(struct graph* g)
+int dfsCycleDetection(struct Graph* g, int num_threads)
 {
     // Mark all the vertices as not visited and not part of recursion
     // stack
-    int *visited = (int*) malloc(g->V * sizeof(int));;
+    int *visited = (int*) malloc(g->V * sizeof(int));
     for (int i = 0; i < V; i++)
         visited[i] = 0;
+    
+    pthread_t* workers = malloc(num_threads * sizeof(pthread_t));
+    
+    for (int i = 0; i < num_threads; i++) {
+        //PREPARE ARGS
+        //TODO
+    
+        pthread_create(&workers[i], NULL, run, NULL);
+    }
  
-    // Call the recursive helper function to detect cycle in different
-    // DFS trees
-    for (int u = 0; u < V; u++)
-        if (!visited[u]) // Don't recur for u if it is already visited
-          if (isCyclicUtil(g, u, visited, -1))
-             return 1;
- 
-    return 0;
 }
