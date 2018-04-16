@@ -31,5 +31,8 @@ cycle_test: cycle_test.o detectors.o intlist.o graph.o
 cycle_test.o: cycle_test.c detectors.h intlist.h graph.h
 	$(CC) -c $< -o $@
 
+bfs_cycle: bfs_cycle.c
+	$(CC) $< -I/usr/local/include/igraph -L/usr/local/lib -ligraph -o $@
+
 clean:
 	rm *.o test
