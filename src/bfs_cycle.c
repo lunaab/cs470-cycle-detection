@@ -4,20 +4,33 @@
 #include <mpi.h>
 #include <pthread.h>
 
+//Timing macros
+#define START_TIMER(NAME) \
+    double NAME ## _time = MPI_Wtime();
+#define STOP_TIMER(NAME) \
+    NAME ## _time = (MPI_Wtime() - NAME ## _time);
+#define GET_TIMER(NAME) (NAME##_time)
+
 void bfs_cycle_detection(igraph_t* graph);
 int search_for_cycles(igraph_t* graph, igraph_integer_t nmbrbl);
 void swap(igraph_dqueue_t* a, igraph_dqueue_t* b);
 
 igraph_integer_t is_cycle = 0;
 igraph_integer_t is_finished = 0;
-igraph_integer_t vertices = 10;
 igraph_integer_t Level;
 
+//igraph_integer_t vertices = 10000;
+//igraph_integer_t vertices = 20000;
+igraph_integer_t vertices = 40000;
+//igraph_integer_t vertices = 80000;
+
+igraph_dqueue_t NLQ;
 igraph_dqueue_t BBLQ_q;
 igraph_dqueue_t BBLQ_prelevel;
 igraph_dqueue_t BBLQ_id;
 igraph_dqueue_t BBLQ_bl;
 
+igraph_vector_t Owner;
 igraph_vector_t D;
 igraph_vector_t id_vector;
 igraph_vector_t bl_vector;
@@ -37,7 +50,7 @@ server_func (void* params)
     
     while (1)
     {
-        MPI_Recv(&recv, 1, MPI_INT, MPI_ANY_SOURCE, NULL, MPI_COMM_WORLD, NULL);
+        MPI_Recv(&recv, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         val = recv;
         
         pthread_mutex_lock(&push_mutex);
@@ -53,6 +66,12 @@ int
 main (int argc, char* argv[])
 {
     int provided;
+
+   // igraph_integer_t loop_root = 0;
+   // igraph_integer_t loop_root = (vertices / 4) - 1;
+   // igraph_integer_t loop_root = (vertices / 2) - 1;
+   // igraph_integer_t loop_root = (vertices*3 / 4) - 1;
+    igraph_integer_t loop_root = vertices - 1;
     
     MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &provided);
     MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
@@ -64,7 +83,7 @@ main (int argc, char* argv[])
     igraph_integer_t i;
     igraph_integer_t holder = -1;
     igraph_vector_t edges;
-    igraph_vector_t Owner;
+    //igraph_vector_t Owner;
     igraph_t graph;
     
     if (igraph_empty(&graph, vertices, IGRAPH_DIRECTED) == IGRAPH_EINVAL)
@@ -75,7 +94,7 @@ main (int argc, char* argv[])
     igraph_vector_init(&edges, (vertices * 2));
     igraph_vector_init(&Owner, vertices);
     
-    for(i = 0; i < vertices; i++) 
+    for(i = 0; i < vertices - 1; i++) 
     {
         VECTOR(Owner)[i] = i % mpi_size;
         holder = (holder + 1);
@@ -84,29 +103,44 @@ main (int argc, char* argv[])
         VECTOR(edges)[holder] = (i + 1) % vertices;
     }
     
+    VECTOR(edges)[(vertices * 2) - 2] = vertices - 1;
+    VECTOR(edges)[(vertices * 2) - 1] = loop_root;
+
     igraph_add_edges(&graph, &edges, NULL);
     
-    FILE* fl = fopen("graph", "w+");
-    igraph_write_graph_dot(&graph, fl);
-    fclose(fl);
+    if (mpi_rank == 0)
+    {
+        FILE* fl = fopen("graph", "w+");
+        igraph_write_graph_dot(&graph, fl);
+        fclose(fl);
+    }
     
-    printf("Number of Vertices: %d\n", igraph_vcount(&graph));
-    printf("Number of Edges: %d\n", igraph_ecount(&graph));
+    //printf("Number of Vertices: %d\n", igraph_vcount(&graph));
+    //printf("Number of Edges: %d\n", igraph_ecount(&graph));
     
+    MPI_Barrier(MPI_COMM_WORLD);
+    START_TIMER(cycle_time);
+
     bfs_cycle_detection(&graph);
     
+    MPI_Barrier(MPI_COMM_WORLD);
+    STOP_TIMER(cycle_time);
+
     if (is_cycle)
     {
         printf("Cycle Found\n");
+        printf("Time(s): %.4f\n", GET_TIMER(cycle_time));
     }
 
+    MPI_Finalize();
+    exit(0);
 }
 
 void
 bfs_cycle_detection(igraph_t* graph)
 {
     igraph_dqueue_t CLQ;
-    igraph_dqueue_t NLQ;
+    //igraph_dqueue_t NLQ;
     igraph_dqueue_t BLQ;
     
     igraph_vector_t Visited;
@@ -114,6 +148,7 @@ bfs_cycle_detection(igraph_t* graph)
     
     Level = 0;
     int send_val;
+    int owner;
     igraph_integer_t nmbrbl = 0;
     igraph_integer_t v;
     igraph_integer_t i;
@@ -148,12 +183,12 @@ bfs_cycle_detection(igraph_t* graph)
         while ( !igraph_dqueue_empty(&CLQ) )
         {
             v = (igraph_integer_t)igraph_dqueue_pop(&CLQ);
-            printf("%d\n", v);
+            //printf("%d\n", v);
             if ( !(VECTOR(Visited)[v] == 1) )
             {
                 VECTOR(Visited)[v] = 1;
                 VECTOR(D)[v] = Level;
-                printf("d(%d) = %d\n", v, Level);
+                //printf("d(%d) = %d\n", v, Level);
                 
                 igraph_neighbors(graph, &neighbors, v, IGRAPH_OUT);
                 for (i = 0; i < igraph_vector_size(&neighbors); i++)
@@ -167,8 +202,9 @@ bfs_cycle_detection(igraph_t* graph)
                     else
                     {
                         send_val = (int) VECTOR(neighbors)[i];
+                        owner = (int) VECTOR(Owner)[send_val];
                         MPI_Send(&send_val, 1, MPI_INT,
-                                 VECTOR(Owner)[VECTOR(neighbors)[i]], NULL, MPI_COMM_WORLD);
+                                 owner, 0, MPI_COMM_WORLD);
                     }
                 }
             }
@@ -176,7 +212,7 @@ bfs_cycle_detection(igraph_t* graph)
             {
                 if ((igraph_integer_t)VECTOR(D)[v] < Level)
                 {
-                    printf("%d < %d \n", (igraph_integer_t)VECTOR(D)[v], Level);
+                    //printf("%d < %d \n", (igraph_integer_t)VECTOR(D)[v], Level);
                     VECTOR(id_vector)[v] = 0;
                     VECTOR(bl_vector)[v] = 0;
                     igraph_dqueue_push(&BLQ, v);

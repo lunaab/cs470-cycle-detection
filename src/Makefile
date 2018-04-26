@@ -1,6 +1,9 @@
 CC = gcc --std=c99
 MAKE=make
 
+CLUSTER_LD=-L/shared/lib/igraph-0.7.1/build/lib
+CLUSTER_C=-I/shared/lib/igraph-0.7.1/build/include/igraph
+
 test: testlist.o intlist.o
 	$(CC) -o $@ testlist.o intlist.o
 
@@ -32,7 +35,7 @@ cycle_test.o: cycle_test.c detectors.h intlist.h graph.h
 	$(CC) -c $< -o $@
 
 bfs_cycle: bfs_cycle.c
-	$(CC) $< -I/usr/local/include/igraph -L/usr/local/lib -ligraph -o $@
+	mpicc $< $(CLUSTER_C) $(CLUSTER_LD) -ligraph -lpthread -o $@
 
 clean:
 	rm *.o test
